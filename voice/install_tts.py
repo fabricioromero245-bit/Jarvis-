@@ -56,10 +56,11 @@ def ensure_voice(voice):
     return onnx_path
 
 
-def synthesize(model_path, text, out_wav, length_scale=1.1, noise_scale=0.75, noise_w=0.85):
-    # Piper defaults (1.0 / 0.667 / 0.8) read as flat/clipped; slightly
-    # slower + more stochastic variation reads less robotic. Still has a
-    # ceiling Piper's architecture can't get past — see voice/README.md.
+def synthesize(model_path, text, out_wav, length_scale=1.0, noise_scale=0.667, noise_w=0.8):
+    # Reverted to Piper's own defaults 2026-08-14: pushing noise_scale/
+    # noise_w higher to sound more "expressive" instead made it sound
+    # worse. Piper's ceiling is architectural, not a tuning problem —
+    # see voice/README.md.
     result = subprocess.run(
         [sys.executable, "-m", "piper", "--model", str(model_path), "--output_file", str(out_wav),
          "--length_scale", str(length_scale), "--noise_scale", str(noise_scale), "--noise_w", str(noise_w)],
@@ -89,9 +90,9 @@ def main():
     ap.add_argument("--voice", default=DEFAULT_VOICE,
                      help="Piper voice name, e.g. es_ES-davefx-medium (default) or en_US-lessac-medium")
     ap.add_argument("--text", default=DEFAULT_TEXT, help="text to speak")
-    ap.add_argument("--length-scale", type=float, default=1.1, help="speaking rate, higher = slower (default 1.1)")
-    ap.add_argument("--noise-scale", type=float, default=0.75, help="tonal variation, higher = more expressive (default 0.75)")
-    ap.add_argument("--noise-w", type=float, default=0.85, help="pacing variation (default 0.85)")
+    ap.add_argument("--length-scale", type=float, default=1.0, help="speaking rate, higher = slower (Piper default 1.0)")
+    ap.add_argument("--noise-scale", type=float, default=0.667, help="tonal variation (Piper default 0.667)")
+    ap.add_argument("--noise-w", type=float, default=0.8, help="pacing variation (Piper default 0.8)")
     ap.add_argument("--skip-install", action="store_true",
                      help="skip pip install, just (re)fetch the voice and speak")
     args = ap.parse_args()

@@ -39,11 +39,12 @@ def transcribe(model, audio_mono_float32, language="es"):
     return " ".join(seg.text.strip() for seg in segments).strip()
 
 
-def synthesize(voice_model_path, text, out_wav, length_scale=1.1, noise_scale=0.75, noise_w=0.85):
-    # Piper defaults (1.0 / 0.667 / 0.8) read as flat/clipped. Slightly
-    # slower + more stochastic variation reads as less robotic without
-    # changing the model — still has a ceiling Piper's architecture can't
-    # get past (see voice/README.md if that ceiling isn't good enough).
+def synthesize(voice_model_path, text, out_wav, length_scale=1.0, noise_scale=0.667, noise_w=0.8):
+    # Reverted to Piper's own defaults 2026-08-14: pushing noise_scale/
+    # noise_w higher to sound more "expressive" instead made it sound
+    # worse (artifacts, not naturalness) — the model already sounds best
+    # near its trained defaults. Piper's ceiling is architectural, not a
+    # tuning problem — see voice/README.md.
     result = subprocess.run(
         [sys.executable, "-m", "piper", "--model", str(voice_model_path), "--output_file", str(out_wav),
          "--length_scale", str(length_scale), "--noise_scale", str(noise_scale), "--noise_w", str(noise_w)],

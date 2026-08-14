@@ -67,9 +67,9 @@ def main():
     ap.add_argument("--voice", default=DEFAULT_VOICE,
                      help="Piper voice name, e.g. es_ES-davefx-medium (default) or es_MX-ald-medium")
     ap.add_argument("--samplerate", type=int, default=16000)
-    ap.add_argument("--length-scale", type=float, default=1.1, help="speaking rate, higher = slower (default 1.1)")
-    ap.add_argument("--noise-scale", type=float, default=0.75, help="tonal variation, higher = more expressive (default 0.75)")
-    ap.add_argument("--noise-w", type=float, default=0.85, help="pacing variation (default 0.85)")
+    ap.add_argument("--length-scale", type=float, default=1.0, help="speaking rate, higher = slower (Piper default 1.0)")
+    ap.add_argument("--noise-scale", type=float, default=0.667, help="tonal variation (Piper default 0.667; pushing this higher made it worse, not better, on 2026-08-14's test)")
+    ap.add_argument("--noise-w", type=float, default=0.8, help="pacing variation (Piper default 0.8)")
     ap.add_argument("--skip-install", action="store_true", help="skip pip install of pynput")
     args = ap.parse_args()
 

@@ -204,23 +204,27 @@ wrote and control; you may need to allow it once.
 ## Voice quality: it sounds robotic
 
 Piper is fast and light, not natural-sounding — that's the tradeoff we
-made in step 3. Two things to try, cheapest first:
+made in step 3.
 
-1. **Tune the synthesis knobs** (`ptt.py` and `install_tts.py` both
-   expose these): `--length-scale` (default 1.1, higher = slower/less
-   clipped), `--noise-scale` (default 0.75, higher = more tonal
-   variation), `--noise-w` (default 0.85, more pacing variation). These
-   already replace Piper's flatter defaults (1.0 / 0.667 / 0.8) — push
-   them further if it still sounds flat, e.g. `--noise-scale 0.9`.
-2. **Try a different voice/accent**: `--voice es_MX-ald-medium` for
-   Mexican Spanish instead of the default `es_ES-davefx-medium` (Spain)
-   — accent fit can matter as much as the raw model. (I couldn't
-   pre-verify this voice name from here, same huggingface.co block as
-   before — if it 404s, paste the error.)
+**2026-08-14**: tried pushing `--noise-scale`/`--noise-w`/`--length-scale`
+above Piper's own defaults to add expressiveness — made it sound worse
+(artifacts, not naturalness), not better. Reverted to Piper's stock
+defaults (`length_scale=1.0`, `noise_scale=0.667`, `noise_w=0.8`) as the
+actual best this voice model gets — the flags are still exposed on
+`ptt.py`/`install_tts.py` if you want to experiment, but don't expect
+tuning to fix this; Piper's ceiling is architectural.
 
-Neither of these changes the underlying architecture. If it's still not
-natural enough after trying both, the real fix is swapping the engine
-for **Kokoro** (StyleTTS2-based, ~350MB voice, meaningfully more
-human-sounding) instead of Piper — bigger download and slower per-reply
-synthesis on this no-GPU machine, but that's the actual quality
-ceiling Piper can't get past. Ask if you want that swap built.
+The real fix is swapping the TTS engine for **Kokoro** (StyleTTS2-based,
+~350MB voice) — genuinely more human-sounding, at the cost of a bigger
+download and slower per-reply synthesis on this no-GPU machine.
+
+**Caveat before committing to that swap**: Kokoro's standout quality is
+specifically in English — that's the language it was primarily trained
+on. Spanish support exists (via a community phonemizer, `misaki`,
+falling back to `espeak-ng` for non-English/Japanese/Chinese languages)
+but is less mature, and could plausibly sound *more* accented/synthetic
+in Spanish than Piper's dedicated Spanish voice does, not less. There's
+no local, offline, Spanish-native option better-established than Piper
+right now within "runs locally" — this isn't a sure win. Worth trying
+empirically since Piper's ceiling is confirmed too low, but going in
+with that expectation set.
