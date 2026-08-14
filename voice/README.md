@@ -200,3 +200,27 @@ Heads-up: holding a global keyboard hook is exactly the mechanism a
 keylogger would use — some antivirus may flag `ptt.py` on first run.
 That's expected for any push-to-talk tool and fine for a script you
 wrote and control; you may need to allow it once.
+
+## Voice quality: it sounds robotic
+
+Piper is fast and light, not natural-sounding — that's the tradeoff we
+made in step 3. Two things to try, cheapest first:
+
+1. **Tune the synthesis knobs** (`ptt.py` and `install_tts.py` both
+   expose these): `--length-scale` (default 1.1, higher = slower/less
+   clipped), `--noise-scale` (default 0.75, higher = more tonal
+   variation), `--noise-w` (default 0.85, more pacing variation). These
+   already replace Piper's flatter defaults (1.0 / 0.667 / 0.8) — push
+   them further if it still sounds flat, e.g. `--noise-scale 0.9`.
+2. **Try a different voice/accent**: `--voice es_MX-ald-medium` for
+   Mexican Spanish instead of the default `es_ES-davefx-medium` (Spain)
+   — accent fit can matter as much as the raw model. (I couldn't
+   pre-verify this voice name from here, same huggingface.co block as
+   before — if it 404s, paste the error.)
+
+Neither of these changes the underlying architecture. If it's still not
+natural enough after trying both, the real fix is swapping the engine
+for **Kokoro** (StyleTTS2-based, ~350MB voice, meaningfully more
+human-sounding) instead of Piper — bigger download and slower per-reply
+synthesis on this no-GPU machine, but that's the actual quality
+ceiling Piper can't get past. Ask if you want that swap built.

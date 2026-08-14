@@ -56,9 +56,13 @@ def ensure_voice(voice):
     return onnx_path
 
 
-def synthesize(model_path, text, out_wav):
+def synthesize(model_path, text, out_wav, length_scale=1.1, noise_scale=0.75, noise_w=0.85):
+    # Piper defaults (1.0 / 0.667 / 0.8) read as flat/clipped; slightly
+    # slower + more stochastic variation reads less robotic. Still has a
+    # ceiling Piper's architecture can't get past — see voice/README.md.
     result = subprocess.run(
-        [sys.executable, "-m", "piper", "--model", str(model_path), "--output_file", str(out_wav)],
+        [sys.executable, "-m", "piper", "--model", str(model_path), "--output_file", str(out_wav),
+         "--length_scale", str(length_scale), "--noise_scale", str(noise_scale), "--noise_w", str(noise_w)],
         input=text, text=True, capture_output=True,
     )
     if result.returncode != 0:
@@ -85,6 +89,9 @@ def main():
     ap.add_argument("--voice", default=DEFAULT_VOICE,
                      help="Piper voice name, e.g. es_ES-davefx-medium (default) or en_US-lessac-medium")
     ap.add_argument("--text", default=DEFAULT_TEXT, help="text to speak")
+    ap.add_argument("--length-scale", type=float, default=1.1, help="speaking rate, higher = slower (default 1.1)")
+    ap.add_argument("--noise-scale", type=float, default=0.75, help="tonal variation, higher = more expressive (default 0.75)")
+    ap.add_argument("--noise-w", type=float, default=0.85, help="pacing variation (default 0.85)")
     ap.add_argument("--skip-install", action="store_true",
                      help="skip pip install, just (re)fetch the voice and speak")
     args = ap.parse_args()
@@ -104,7 +111,8 @@ def main():
 
     out_wav = Path(__file__).resolve().parent / "_tts_test.wav"
     print(f"Synthesizing: {args.text!r}")
-    synthesize(model_path, args.text, out_wav)
+    synthesize(model_path, args.text, out_wav,
+               length_scale=args.length_scale, noise_scale=args.noise_scale, noise_w=args.noise_w)
 
     play(out_wav)
     print("\nIf you heard that sentence spoken, step 3 works. Paste this output back.")

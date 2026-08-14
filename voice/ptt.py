@@ -64,8 +64,12 @@ def main():
     ap.add_argument("--key", default=DEFAULT_KEY, help="hotkey to hold (default: f9)")
     ap.add_argument("--model", default=DEFAULT_MODEL, help="whisper model size")
     ap.add_argument("--language", default=DEFAULT_LANGUAGE, help="STT language, '' for auto-detect")
-    ap.add_argument("--voice", default=DEFAULT_VOICE, help="Piper voice name")
+    ap.add_argument("--voice", default=DEFAULT_VOICE,
+                     help="Piper voice name, e.g. es_ES-davefx-medium (default) or es_MX-ald-medium")
     ap.add_argument("--samplerate", type=int, default=16000)
+    ap.add_argument("--length-scale", type=float, default=1.1, help="speaking rate, higher = slower (default 1.1)")
+    ap.add_argument("--noise-scale", type=float, default=0.75, help="tonal variation, higher = more expressive (default 0.75)")
+    ap.add_argument("--noise-w", type=float, default=0.85, help="pacing variation (default 0.85)")
     ap.add_argument("--skip-install", action="store_true", help="skip pip install of pynput")
     args = ap.parse_args()
 
@@ -161,7 +165,8 @@ def main():
         print(f"Claude: {response}")
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             try:
-                vl.synthesize(voice_model, response, tmp.name)
+                vl.synthesize(voice_model, response, tmp.name,
+                              length_scale=args.length_scale, noise_scale=args.noise_scale, noise_w=args.noise_w)
                 vl.write_state(mic="idle", speaker="speaking", last_transcript=text)
                 vl.play_wav(tmp.name)
             except RuntimeError as e:

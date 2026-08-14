@@ -39,9 +39,14 @@ def transcribe(model, audio_mono_float32, language="es"):
     return " ".join(seg.text.strip() for seg in segments).strip()
 
 
-def synthesize(voice_model_path, text, out_wav):
+def synthesize(voice_model_path, text, out_wav, length_scale=1.1, noise_scale=0.75, noise_w=0.85):
+    # Piper defaults (1.0 / 0.667 / 0.8) read as flat/clipped. Slightly
+    # slower + more stochastic variation reads as less robotic without
+    # changing the model — still has a ceiling Piper's architecture can't
+    # get past (see voice/README.md if that ceiling isn't good enough).
     result = subprocess.run(
-        [sys.executable, "-m", "piper", "--model", str(voice_model_path), "--output_file", str(out_wav)],
+        [sys.executable, "-m", "piper", "--model", str(voice_model_path), "--output_file", str(out_wav),
+         "--length_scale", str(length_scale), "--noise_scale", str(noise_scale), "--noise_w", str(noise_w)],
         input=text, text=True, capture_output=True,
     )
     if result.returncode != 0:
