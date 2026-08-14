@@ -8,6 +8,14 @@ compiler/make (rules out compiling whisper.cpp on Windows), so
 faster-whisper (pure pip, prebuilt CPU wheels) is the right engine.
 Default model size is 'base' — a reasonable CPU-only tradeoff; pass
 --model tiny if it feels slow, or a bigger size if you have RAM to spare.
+
+Audio I/O uses `soundcard`, not `sounddevice`: on Windows, soundcard
+talks to WASAPI directly (ctypes/COM) instead of bundling a prebuilt
+native PortAudio binary. sounddevice's bundled ARM64 PortAudio DLL
+proved unreliable on this machine (worked once, then consistently
+failed to load with error 0x7e even with the matching Visual C++
+Redistributable confirmed installed) — soundcard sidesteps that whole
+class of problem by not shipping a compiled binary blob at all.
 """
 
 import argparse
@@ -24,22 +32,25 @@ def pip_install(*pkgs):
 
 
 def record(seconds, samplerate):
-    import numpy as np
-    import sounddevice as sd
+    import soundcard as sc
 
     print(f"Recording for {seconds}s — speak now...")
-    audio = sd.rec(int(seconds * samplerate), samplerate=samplerate, channels=1, dtype="int16")
-    sd.wait()
+    mic = sc.default_microphone()
+    audio = mic.record(samplerate=samplerate, numframes=int(seconds * samplerate))
     print("Done recording.")
-    return audio
+    return audio  # float32 numpy array, shape (n, channels)
 
 
 def save_wav(path, audio, samplerate):
+    import numpy as np
+
+    mono = audio[:, 0] if audio.ndim > 1 else audio
+    int16 = np.clip(mono * 32767, -32768, 32767).astype(np.int16)
     with wave.open(path, "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)  # int16
         wf.setframerate(samplerate)
-        wf.writeframes(audio.tobytes())
+        wf.writeframes(int16.tobytes())
 
 
 def main():
@@ -52,14 +63,14 @@ def main():
     args = ap.parse_args()
 
     if not args.skip_install:
-        print("This will install (pip): faster-whisper, sounddevice, numpy")
+        print("This will install (pip): faster-whisper, soundcard, numpy")
         print(f"and download the '{args.model}' Whisper model on first use (one-time, ~size varies by model).")
         print("Nothing else on this machine is touched.")
         if input("Proceed? [y/N] ").strip().lower() != "y":
             print("Aborted — nothing installed.")
             return
         print("Installing...")
-        pip_install("faster-whisper", "sounddevice", "numpy")
+        pip_install("faster-whisper", "soundcard", "numpy")
 
     print(f"\nLoading '{args.model}' model (downloads it on first run)...")
     from faster_whisper import WhisperModel

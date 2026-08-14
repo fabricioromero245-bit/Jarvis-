@@ -7,6 +7,12 @@ Piper over Kokoro: a Piper voice is ~60MB vs. Kokoro's ~350MB, and this
 machine has no GPU to make Kokoro's extra quality worth the weight.
 Default voice is Spanish (es_ES) since that's the language in use here
 — override with --voice if you want a different language/accent.
+
+Playback uses `soundcard`, not `sounddevice`: sounddevice's bundled
+ARM64 PortAudio DLL was unreliable on this machine (worked once, then
+consistently failed with error 0x7e — confirmed not a missing Visual
+C++ Redistributable, that was already installed). soundcard talks to
+WASAPI directly via ctypes/COM instead of shipping a compiled binary.
 """
 
 import argparse
@@ -63,15 +69,15 @@ def synthesize(model_path, text, out_wav):
 
 def play(wav_path):
     import numpy as np
-    import sounddevice as sd
+    import soundcard as sc
 
     with wave.open(str(wav_path), "rb") as wf:
         samplerate = wf.getframerate()
         frames = wf.readframes(wf.getnframes())
-        audio = np.frombuffer(frames, dtype=np.int16)
+        audio = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
     print("Playing...")
-    sd.play(audio, samplerate)
-    sd.wait()
+    speaker = sc.default_speaker()
+    speaker.play(audio, samplerate=samplerate)
 
 
 def main():
@@ -84,14 +90,14 @@ def main():
     args = ap.parse_args()
 
     if not args.skip_install:
-        print("This will install (pip): piper-tts")
+        print("This will install (pip): piper-tts, soundcard, numpy")
         print(f"and download the '{args.voice}' voice (~60MB, one-time).")
         print("Nothing else on this machine is touched.")
         if input("Proceed? [y/N] ").strip().lower() != "y":
             print("Aborted — nothing installed.")
             return
         print("Installing...")
-        pip_install("piper-tts")
+        pip_install("piper-tts", "soundcard", "numpy")
 
     print(f"\nFetching voice '{args.voice}' if not already cached...")
     model_path = ensure_voice(args.voice)
