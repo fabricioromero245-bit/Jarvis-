@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .venv/
 voice/state.json
+voice/models/
+voice/_tts_test.wav

@@ -34,8 +34,10 @@ reopen the terminal and retry. That single install fixed it here.
       model (CPU-only, no GPU / no C compiler on this machine ruled out
       whisper.cpp), records 5s of audio, and prints the transcript.
       **Run this and paste the transcript back before continuing.**
-- [ ] **3. `install_tts.py`** — installs the text-to-speech engine (Piper
-      or Kokoro) and downloads a voice.
+- [x] **3. `install_tts.py`** — installs Piper + a Spanish voice
+      (`es_ES-davefx-medium`, ~60MB — Kokoro would be ~350MB and there's
+      no GPU here to justify it), synthesizes a test sentence, and plays
+      it back. **Run this and confirm you heard it before continuing.**
 - [ ] **4. `ptt.py` + `bridge.py`** — the push-to-talk hotkey daemon and
       the loop that wires STT → `claude -p` → TTS together.
 - [ ] **5. `start.py`** — one command that brings the whole loop up.
@@ -95,3 +97,35 @@ haven't already fetched that size).
 a spoken "buenos días" — correct modulo a minor `base`-model repetition
 artifact on the leading word. Good enough to move on; a bigger model
 (`small`) would clean that up later if it bothers you in practice.
+
+## Run step 3
+
+Windows (PowerShell):
+```powershell
+cd voice
+python install_tts.py
+```
+
+macOS / Linux:
+```bash
+cd voice
+python3 install_tts.py
+```
+
+Asks `Proceed? [y/N]` before installing. Downloads the voice into
+`voice/models/` (gitignored — it's a binary model file, not something
+that belongs in the repo), synthesizes the default sentence, and plays
+it through your speakers. Paste the output back — if you heard it,
+step 3 is done and step 4 (the push-to-talk hotkey + full loop) is next.
+
+I could not pre-verify the voice download URL from here — this session
+runs in a sandbox whose network policy blocks huggingface.co outright,
+unrelated to whether the file exists. If `install_tts.py` fails on the
+download step, paste the exact error and I'll fix the voice name/URL.
+
+Options:
+- `--voice en_US-lessac-medium` for an English voice instead (same
+  Piper install, just a different model download).
+- `--text "..."` to test with your own sentence.
+- `--skip-install` to skip pip and just re-fetch the voice / re-speak,
+  once piper-tts is already installed.
