@@ -179,7 +179,7 @@ python3 ptt.py
 ```
 
 Asks `Proceed? [y/N]` (installs `pynput`, the only new dependency).
-Then loads the STT model and waits. **Hold right Ctrl, speak, release
+Then loads the STT model and waits. **Hold Caps Lock, speak, release
 it** — it transcribes, prints `You: ...`, sends that to `claude -p`,
 prints `Claude: ...`, then speaks the response through Piper. `Ctrl+C`
 to quit.
@@ -189,16 +189,19 @@ happening (`idle` / `listening` / `processing` / `speaking`, plus the
 last transcript) — open the HUD (`hud/run.sh`) or the orb (`gui/`)
 alongside it and both track it live.
 
-**2026-08-14**: the original default was F9. Switched to right Ctrl
-after F9 turned out to collide with Edge's own "Reading mode" shortcut
-— pressing it while the orb window (`gui/`) had focus popped up Edge's
-reader view instead of giving any clear sign the hotkey worked. Right
-Ctrl is the standard push-to-talk key precisely because nothing else
-binds to it.
+**2026-08-14**: went through two other defaults first. F9 collided
+with Edge's own "Reading mode" shortcut — pressing it while the orb
+window (`gui/`) had focus popped up Edge's reader view instead of any
+clear sign the hotkey worked. Then tried right Ctrl (the usual
+push-to-talk convention), but this machine's keyboard only has one
+Ctrl, on the left — the key doesn't physically exist here. Settled on
+Caps Lock: present on every keyboard, unused for typing, and confirmed
+via `debug_keys.py` to fire clean press/release events on this machine.
 
 Options:
-- `--key f8` (or any pynput key name) if right Ctrl collides with
-  something on your keyboard/laptop.
+- `--key f8` (or any pynput key name — run `debug_keys.py` first to
+  confirm your keyboard actually reports it the way you expect) if
+  Caps Lock collides with something on your setup.
 - `--language ''` for auto-detect instead of forced Spanish.
 - `--skip-install` once `pynput` is already installed.
 
@@ -232,7 +235,7 @@ python3 start.py
 That's it — this is the command to remember day to day; steps 1-4 above
 were the one-time setup. It installs anything still missing, fetches
 the voice model if it isn't cached yet, and hands off to `ptt.py` with
-right Ctrl / Spanish / `es_ES-davefx-medium` already configured.
+Caps Lock / Spanish / `es_ES-davefx-medium` already configured.
 Anything after `start.py` on the command line passes straight through
 to `ptt.py`, so
 `python start.py --key f8` still works.

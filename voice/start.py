@@ -4,7 +4,7 @@
 Ensures dependencies + the default voice model are present (installing
 quietly, no prompts — steps 2-4 already got explicit confirmation for
 these installs), then launches ptt.py with the configuration confirmed
-working on this machine: right Ctrl push-to-talk, faster-whisper 'base'
+working on this machine: Caps Lock push-to-talk, faster-whisper 'base'
 forced to Spanish, Piper's es_ES-davefx-medium voice at stock parameters.
 
 Extra arguments pass straight through to ptt.py, e.g.:

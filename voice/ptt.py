@@ -6,13 +6,16 @@ STT (faster-whisper) -> `claude -p` -> TTS (Piper) -> speakers, and
 keeps voice/state.json updated live so the HUD's Audio I/O panel
 reflects mic/speaker state and the last transcript in real time.
 
-Default hotkey is right Ctrl — the standard push-to-talk convention
-(same as Discord etc.), chosen because F9 (the original default)
-turned out to collide with Edge's own "Reading mode" shortcut when the
-orb window (gui/) has focus. Override with --key if it collides with
-anything on your setup. Requires the `claude` CLI on PATH; if it isn't,
-the loop still records/transcribes/speaks, it just reports the
-claude-call error instead of a response — see voice/README.md.
+Default hotkey is Caps Lock. Went through two other defaults first:
+F9 collided with Edge's "Reading mode" shortcut when the orb window
+(gui/) had focus; right Ctrl doesn't exist on this machine's keyboard
+(compact/laptop layout, single Ctrl on the left only). Caps Lock is on
+every keyboard, essentially unused for typing, and confirmed via
+debug_keys.py to fire clean press/release events on this machine.
+Override with --key if it collides with anything on your setup.
+Requires the `claude` CLI on PATH; if it isn't, the loop still
+records/transcribes/speaks, it just reports the claude-call error
+instead of a response — see voice/README.md.
 """
 
 import argparse
@@ -27,7 +30,7 @@ from pathlib import Path
 
 import voice_lib as vl
 
-DEFAULT_KEY = "ctrl_r"
+DEFAULT_KEY = "caps_lock"
 DEFAULT_MODEL = "base"
 DEFAULT_LANGUAGE = "es"
 DEFAULT_VOICE = "es_ES-davefx-medium"
@@ -63,7 +66,7 @@ def parse_key(name, keyboard):
 
 def main():
     ap = argparse.ArgumentParser(description="Push-to-talk voice loop")
-    ap.add_argument("--key", default=DEFAULT_KEY, help="hotkey to hold (default: ctrl_r, i.e. right Ctrl)")
+    ap.add_argument("--key", default=DEFAULT_KEY, help="hotkey to hold (default: caps_lock)")
     ap.add_argument("--model", default=DEFAULT_MODEL, help="whisper model size")
     ap.add_argument("--language", default=DEFAULT_LANGUAGE, help="STT language, '' for auto-detect")
     ap.add_argument("--voice", default=DEFAULT_VOICE,
