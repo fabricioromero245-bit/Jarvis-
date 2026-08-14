@@ -15,25 +15,34 @@ you hold hotkey → mic records → release → local STT → text
 
 ## Status
 
-Built in five steps, run in order, confirming before each install:
+Built in five steps, run in order, confirming before each install.
+Everything is Python (no `.sh` scripts) so the same steps work
+unchanged on Windows, macOS, or Linux — no WSL, no bash required.
 
-- [x] **1. `check_env.sh`** — read-only. Reports what's installed and what
-      your machine can run. Installs nothing. **Run this and paste the
-      output back before continuing.**
-- [ ] **2. `install_stt.sh`** — installs the speech-to-text engine
+- [x] **1. `check_env.py`** — read-only. Reports what's installed and
+      what your machine can run. Installs nothing. **Run this and paste
+      the output back before continuing.**
+- [ ] **2. `install_stt.py`** — installs the speech-to-text engine
       (faster-whisper or whisper.cpp) and downloads a model, sized to
       what step 1 found.
-- [ ] **3. `install_tts.sh`** — installs the text-to-speech engine (Piper
+- [ ] **3. `install_tts.py`** — installs the text-to-speech engine (Piper
       or Kokoro) and downloads a voice.
 - [ ] **4. `ptt.py` + `bridge.py`** — the push-to-talk hotkey daemon and
       the loop that wires STT → `claude -p` → TTS together.
-- [ ] **5. `start.sh`** — one command that brings the whole loop up.
+- [ ] **5. `start.py`** — one command that brings the whole loop up.
 
 ## Run step 1
 
+Windows (PowerShell):
+```powershell
+cd voice
+python check_env.py
+```
+
+macOS / Linux:
 ```bash
 cd voice
-./check_env.sh
+python3 check_env.py
 ```
 
 Paste the full output back. It's used to decide:
