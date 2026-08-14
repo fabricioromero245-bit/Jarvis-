@@ -188,6 +188,14 @@ Options:
 - `--language ''` for auto-detect instead of forced Spanish.
 - `--skip-install` once `pynput` is already installed.
 
+**Known limitation**: every `claude -p` call is a fresh, memoryless
+conversation — nothing carries over turn to turn. `ptt.py` pins the
+reply language explicitly per call (based on `--language`) so a short,
+ambiguous turn doesn't come back in the wrong language, but it does
+*not* give Claude any memory of the previous turn. If that turns out to
+matter in practice, the fix is session continuity (`claude --continue`
+or `--resume <id>`) — not built yet, flag it if you want it.
+
 Heads-up: holding a global keyboard hook is exactly the mechanism a
 keylogger would use — some antivirus may flag `ptt.py` on first run.
 That's expected for any push-to-talk tool and fine for a script you

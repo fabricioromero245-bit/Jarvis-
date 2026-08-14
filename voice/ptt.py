@@ -32,6 +32,13 @@ DEFAULT_VOICE = "es_ES-davefx-medium"
 HEARTBEAT_SECONDS = 5
 RECORD_CHUNK_FRAMES = 4096  # larger chunk = fewer, steadier reads (1024 caused discontinuity warnings)
 
+# Each `claude -p` call is a fresh, memoryless conversation — nothing
+# carries over turn to turn (a real limitation, not just a language
+# quirk; see voice/README.md). Short/ambiguous input can make it reply
+# in the wrong language with no prior turn to anchor it, so the spoken
+# language is pinned explicitly per call instead of left to guesswork.
+LANGUAGE_NAMES = {"es": "Spanish", "en": "English", "pt": "Portuguese", "fr": "French"}
+
 # soundcard warns on minor buffer discontinuities; harmless in practice
 # here (confirmed on 2026-08-14: recording still transcribed correctly),
 # just noisy — filtered instead of silently swallowing real errors.
@@ -139,8 +146,13 @@ def main():
         print(f"\nYou: {text}")
         vl.write_state(mic="idle", speaker="idle", last_transcript=text, note="thinking...")
 
+        prompt = text
+        if args.language:
+            lang_name = LANGUAGE_NAMES.get(args.language, args.language)
+            prompt = f"(Respond only in {lang_name}.) {text}"
+
         try:
-            response = vl.ask_claude(text)
+            response = vl.ask_claude(prompt)
         except RuntimeError as e:
             print(f"claude error: {e}")
             vl.write_state(mic="idle", speaker="idle", last_transcript=text, note=str(e))
