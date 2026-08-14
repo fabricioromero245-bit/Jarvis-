@@ -1,0 +1,466 @@
+<title>Jarvis Instrument</title>
+<style>
+  :root {
+    --void: #050607;
+    --ring-idle: 45 212 191;      /* turquoise/teal — the one fixed accent, also the focus-ring color */
+    --structural: #3a4048;
+    --structural-dim: #23282e;
+    --readout: #e8edf0;
+    --muted: #6b7480;
+    --danger: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--void);
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Liberation Mono", monospace;
+    color: var(--readout);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .stage {
+    position: relative;
+    width: min(72vh, 92vw);
+    height: min(72vh, 92vw);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .readout {
+    position: relative;
+    margin-top: 1.6rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .state-label {
+    font-size: clamp(0.9rem, 2vw, 1.15rem);
+    font-weight: 600;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    text-indent: 0.42em; /* balance the trailing tracking gap */
+    color: rgb(var(--ring-idle));
+  }
+
+  .transcript {
+    max-width: min(80vw, 640px);
+    min-height: 1.4em;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .transcript .quote { color: var(--structural); }
+
+  /* fixed instrument chrome — corner brackets */
+  .bezel {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+  .bezel::before, .bezel::after,
+  .bezel span::before, .bezel span::after {
+    content: "";
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--structural);
+  }
+  .bezel::before { top: 28px; left: 28px; border-right: none; border-bottom: none; }
+  .bezel::after { top: 28px; right: 28px; border-left: none; border-bottom: none; }
+  .bezel span::before { bottom: 28px; left: 28px; border-right: none; border-top: none; }
+  .bezel span::after { bottom: 28px; right: 28px; border-left: none; border-top: none; }
+
+  .clock {
+    position: fixed;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.68rem;
+    letter-spacing: 0.3em;
+    color: var(--structural);
+    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; }
+  }
+</style>
+
+<div class="bezel"><span></span></div>
+<div class="clock" id="clock">JARVIS · STANDBY</div>
+
+<div class="stage">
+  <canvas id="ring"></canvas>
+</div>
+
+<div class="readout">
+  <div class="state-label" id="stateLabel">En reposo</div>
+  <div class="transcript" id="transcript">&nbsp;</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // One fixed accent throughout — turquoise/teal, never shifts with state.
+  var ACCENT_RGB = "45 212 191";
+
+  var STATES = {
+    idle: {
+      label: "En reposo",
+      clock: "JARVIS · STANDBY",
+      fireRate: 0.02,
+      cascadeProb: 0.12,
+      rotSpeedY: 0.08,
+      rotXAmp: 0.15,
+      pulseSpeed: 0.7,
+      breatheAmp: 0.02,
+      breatheSpeed: 0.15
+    },
+    listening: {
+      label: "Escuchando",
+      clock: "JARVIS · CAPTURANDO AUDIO",
+      fireRate: 0.06,
+      cascadeProb: 0.22,
+      rotSpeedY: 0.14,
+      rotXAmp: 0.18,
+      pulseSpeed: 0.9,
+      breatheAmp: 0.09,
+      breatheSpeed: 0.55
+    },
+    processing: {
+      label: "Procesando",
+      clock: "JARVIS · CLAUDE -P",
+      fireRate: 0.22,
+      cascadeProb: 0.4,
+      rotSpeedY: 0.32,
+      rotXAmp: 0.22,
+      pulseSpeed: 1.6,
+      breatheAmp: 0.05,
+      breatheSpeed: 0.5
+    },
+    speaking: {
+      label: "Hablando",
+      clock: "JARVIS · SÍNTESIS DE VOZ",
+      fireRate: 0.1,
+      cascadeProb: 0.28,
+      rotSpeedY: 0.18,
+      rotXAmp: 0.2,
+      pulseSpeed: 1.1,
+      breatheAmp: 0.06,
+      breatheSpeed: 0.35
+    }
+  };
+
+  var canvas = document.getElementById("ring");
+  var ctx = canvas.getContext("2d");
+  var stage = document.querySelector(".stage");
+  var labelEl = document.getElementById("stateLabel");
+  var transcriptEl = document.getElementById("transcript");
+  var clockEl = document.getElementById("clock");
+  var root = document.documentElement;
+
+  root.style.setProperty("--label-rgb", ACCENT_RGB);
+
+  var target = STATES.idle;
+  var mix = {
+    fireRate: target.fireRate, cascadeProb: target.cascadeProb,
+    rotSpeedY: target.rotSpeedY, rotXAmp: target.rotXAmp, pulseSpeed: target.pulseSpeed,
+    breatheAmp: target.breatheAmp, breatheSpeed: target.breatheSpeed
+  };
+
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var size = 0;
+
+  function resize() {
+    var rect = stage.getBoundingClientRect();
+    size = rect.width;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  // ---- neuron sphere: fibonacci distribution + k-nearest-neighbor synapses ----
+  var NODE_COUNT = 190;
+  var K_NEAREST = 3;
+  var MAX_PULSES = 320;
+
+  var nodes = [];
+  (function buildNodes() {
+    var offset = 2 / NODE_COUNT;
+    var increment = Math.PI * (3 - Math.sqrt(5)); // golden angle
+    for (var i = 0; i < NODE_COUNT; i++) {
+      var y = (i * offset - 1) + offset / 2;
+      var r = Math.sqrt(Math.max(0, 1 - y * y));
+      var phi = i * increment;
+      nodes.push({ x: Math.cos(phi) * r, y: y, z: Math.sin(phi) * r, activation: 0 });
+    }
+  })();
+
+  var edges = [];
+  var adjacency = [];
+  (function buildEdges() {
+    for (var a = 0; a < nodes.length; a++) adjacency.push([]);
+    var edgeSet = {};
+    for (var i = 0; i < nodes.length; i++) {
+      var dists = [];
+      for (var j = 0; j < nodes.length; j++) {
+        if (i === j) continue;
+        var dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y, dz = nodes[i].z - nodes[j].z;
+        dists.push([j, dx * dx + dy * dy + dz * dz]);
+      }
+      dists.sort(function (p, q) { return p[1] - q[1]; });
+      for (var k = 0; k < K_NEAREST; k++) {
+        var j2 = dists[k][0];
+        var key = i < j2 ? i + "_" + j2 : j2 + "_" + i;
+        if (!edgeSet[key]) {
+          edgeSet[key] = true;
+          var edgeIdx = edges.length;
+          edges.push({ a: i, b: j2 });
+          adjacency[i].push(edgeIdx);
+          adjacency[j2].push(edgeIdx);
+        }
+      }
+    }
+  })();
+
+  var pulses = [];
+
+  function fireNode(i) {
+    nodes[i].activation = 1;
+    if (pulses.length > MAX_PULSES) return;
+    var edgeIdxs = adjacency[i];
+    for (var e = 0; e < edgeIdxs.length; e++) {
+      if (Math.random() < mix.cascadeProb) {
+        var edge = edges[edgeIdxs[e]];
+        var other = edge.a === i ? edge.b : edge.a;
+        pulses.push({ from: i, to: other, t: 0 });
+      }
+    }
+  }
+
+  function lerpOnSphere(pa, pb, t) {
+    var x = pa.x + (pb.x - pa.x) * t;
+    var y = pa.y + (pb.y - pa.y) * t;
+    var z = pa.z + (pb.z - pa.z) * t;
+    var len = Math.sqrt(x * x + y * y + z * z) || 1;
+    return { x: x / len, y: y / len, z: z / len };
+  }
+
+  var CAM_DIST = 2.4;
+  var FOCAL = 2.4;
+
+  function project(p, sinY, cosY, sinX, cosX, cx, cy, radiusPx) {
+    var x1 = p.x * cosY - p.z * sinY;
+    var z1 = p.x * sinY + p.z * cosY;
+    var y1 = p.y;
+    var y2 = y1 * cosX - z1 * sinX;
+    var z2 = y1 * sinX + z1 * cosX;
+    var persp = FOCAL / (CAM_DIST - z2);
+    return { x: cx + x1 * persp * radiusPx, y: cy + y2 * persp * radiusPx, z: z2, persp: persp };
+  }
+
+  function setState(key, transcript) {
+    if (!STATES[key]) return;
+    target = STATES[key];
+    labelEl.textContent = target.label;
+    clockEl.textContent = target.clock;
+    transcriptEl.innerHTML = transcript
+      ? '<span class="quote">&ldquo;</span>' + transcript + '<span class="quote">&rdquo;</span>'
+      : "&nbsp;";
+  }
+
+  // ---- live state, pushed from voice/state.json via gui/server.py ----
+  function mapToVisualState(mic, speaker) {
+    if (speaker === "speaking") return "speaking";
+    if (mic === "listening") return "listening";
+    if (mic === "processing") return "processing";
+    return "idle";
+  }
+
+  var lastStateKey = null;
+  var lastTranscript = null;
+
+  function pollState() {
+    fetch("/state", { cache: "no-store" })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var key = mapToVisualState(data.mic, data.speaker);
+        var transcript = data.last_transcript || "";
+        if (key !== lastStateKey || transcript !== lastTranscript) {
+          lastStateKey = key;
+          lastTranscript = transcript;
+          setState(key, transcript);
+        }
+      })
+      .catch(function () { /* server not up yet or blipped — just retry next tick */ })
+      .then(function () { setTimeout(pollState, 300); });
+  }
+  pollState();
+
+  var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var motionScale = reducedMotion ? 0.15 : 1;
+
+  var t = 0;
+  var rotY = 0;
+
+  function frame(dtMs) {
+    var dt = Math.min(dtMs / 1000, 0.05);
+    t += dt * motionScale;
+
+    var smoothing = 1 - Math.pow(0.001, dt);
+    mix.fireRate = lerp(mix.fireRate, target.fireRate, smoothing);
+    mix.cascadeProb = lerp(mix.cascadeProb, target.cascadeProb, smoothing);
+    mix.rotSpeedY = lerp(mix.rotSpeedY, target.rotSpeedY, smoothing);
+    mix.rotXAmp = lerp(mix.rotXAmp, target.rotXAmp, smoothing);
+    mix.pulseSpeed = lerp(mix.pulseSpeed, target.pulseSpeed, smoothing);
+    mix.breatheAmp = lerp(mix.breatheAmp, target.breatheAmp, smoothing);
+    mix.breatheSpeed = lerp(mix.breatheSpeed, target.breatheSpeed, smoothing);
+
+    rotY += dt * mix.rotSpeedY * motionScale;
+    var rotX = Math.sin(t * 0.25) * mix.rotXAmp;
+
+    // ---- breathing: whole sphere contracts/expands, strongest while listening ----
+    var breathe = 1 + mix.breatheAmp * (
+      0.7 * Math.sin(t * mix.breatheSpeed * Math.PI * 2) +
+      0.3 * Math.sin(t * mix.breatheSpeed * Math.PI * 2 * 1.7 + 1.3)
+    );
+
+    // ---- ambient firing ----
+    for (var ni = 0; ni < nodes.length; ni++) {
+      nodes[ni].activation *= Math.pow(0.02, dt);
+      if (Math.random() < mix.fireRate * dt) fireNode(ni);
+    }
+
+    // ---- advance pulses (fire spreads across synapses) ----
+    for (var pi = pulses.length - 1; pi >= 0; pi--) {
+      var pulse = pulses[pi];
+      pulse.t += dt * mix.pulseSpeed;
+      if (pulse.t >= 1) {
+        pulses.splice(pi, 1);
+        fireNode(pulse.to);
+      }
+    }
+
+    ctx.clearRect(0, 0, size, size);
+
+    var cx = size / 2;
+    var cy = size / 2;
+    var radiusPx = size * 0.3 * breathe;
+    var sinY = Math.sin(rotY), cosY = Math.cos(rotY);
+    var sinX = Math.sin(rotX), cosX = Math.cos(rotX);
+    var rgbStr = ACCENT_RGB.replace(/ /g, ",");
+
+    var projected = new Array(nodes.length);
+    for (var pj = 0; pj < nodes.length; pj++) {
+      projected[pj] = project(nodes[pj], sinY, cosY, sinX, cosX, cx, cy, radiusPx);
+    }
+
+    // ambient core glow
+    var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radiusPx * 0.95);
+    grad.addColorStop(0, "rgba(" + rgbStr + ",0.05)");
+    grad.addColorStop(1, "rgba(" + rgbStr + ",0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radiusPx * 0.95, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ---- synapses (edges) ----
+    ctx.lineWidth = 1;
+    for (var ei = 0; ei < edges.length; ei++) {
+      var edge = edges[ei];
+      var pa = projected[edge.a], pb = projected[edge.b];
+      var depthAlpha = Math.max(0, Math.min(1, (((pa.z + pb.z) / 2) + 1) / 2));
+      var actGlow = Math.max(nodes[edge.a].activation, nodes[edge.b].activation);
+      var alpha = 0.05 + depthAlpha * 0.09 + actGlow * 0.4;
+      ctx.strokeStyle = "rgba(" + rgbStr + "," + alpha.toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.stroke();
+    }
+
+    // ---- pulses traveling along synapses ----
+    for (var pk = 0; pk < pulses.length; pk++) {
+      var pu = pulses[pk];
+      var spherePt = lerpOnSphere(nodes[pu.from], nodes[pu.to], pu.t);
+      var pp = project(spherePt, sinY, cosY, sinX, cosX, cx, cy, radiusPx);
+      var depthA = Math.max(0.2, Math.min(1, (pp.z + 1) / 2));
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(" + rgbStr + "," + (0.85 * depthA).toFixed(3) + ")";
+      ctx.shadowColor = "rgb(" + rgbStr + ")";
+      ctx.shadowBlur = 6;
+      ctx.arc(pp.x, pp.y, 1.6 * depthA + 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    // ---- neurons, back-to-front ----
+    var order = projected.map(function (p, idx) { return idx; });
+    order.sort(function (ia, ib) { return projected[ia].z - projected[ib].z; });
+    for (var oi = 0; oi < order.length; oi++) {
+      var idx = order[oi];
+      var pr = projected[idx];
+      var node = nodes[idx];
+      var depth = Math.max(0.15, Math.min(1, (pr.z + 1) / 2));
+      var act = node.activation;
+      var radius = (1.1 + depth * 1.4) * (1 + act * 1.6);
+      var alpha = (0.25 + depth * 0.35) * (0.6 + act * 0.4);
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(" + rgbStr + "," + Math.min(1, alpha).toFixed(3) + ")";
+      if (act > 0.05) {
+        ctx.shadowColor = "rgb(" + rgbStr + ")";
+        ctx.shadowBlur = 4 + act * 10;
+      }
+      ctx.arc(pr.x, pr.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    requestAnimationFrame(function (nextMs) {
+      frame(nextMs - lastMs);
+      lastMs = nextMs;
+    });
+  }
+
+  var lastMs = performance.now();
+  requestAnimationFrame(function (firstMs) {
+    lastMs = firstMs;
+    requestAnimationFrame(function (nextMs) {
+      frame(nextMs - lastMs);
+      lastMs = nextMs;
+    });
+  });
+})();
+</script>
