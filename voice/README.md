@@ -48,9 +48,24 @@ ARM64-specific artifact that can be broken or mismatched.
       no GPU here to justify it), synthesizes a test sentence, and plays
       it back. **Confirmed 2026-08-14: heard "Hola, este es Jarvis
       probando la voz." out loud.**
-- [ ] **4. `ptt.py` + `bridge.py`** — the push-to-talk hotkey daemon and
-      the loop that wires STT → `claude -p` → TTS together.
+- [ ] **4. `ptt.py`** — the push-to-talk daemon: hold a key, speak,
+      release, and it runs mic → STT → `claude -p` → TTS → speakers,
+      keeping `voice/state.json` live for the HUD. (Merged the planned
+      `bridge.py` into this one file — no benefit to splitting them at
+      this size.) **Needs the `claude` CLI on PATH — not yet confirmed
+      installed on this machine.** Not yet run/verified.
 - [ ] **5. `start.py`** — one command that brings the whole loop up.
+
+**Prerequisite for step 4**: `check_env.py` (step 1) showed `claude` is
+not on this machine's PATH. `ptt.py` will record/transcribe/speak fine
+without it, but the actual bridge to Claude will fail until it's
+installed. Install it before testing step 4 end-to-end:
+```powershell
+npm install -g @anthropic-ai/claude-code
+claude
+```
+(the second command runs it once to log in — needs Node.js; if `npm`
+isn't found, install Node.js from https://nodejs.org first).
 
 ## Run step 1
 
@@ -142,3 +157,38 @@ Options:
 - `--text "..."` to test with your own sentence.
 - `--skip-install` to skip pip and just re-fetch the voice / re-speak,
   once piper-tts is already installed.
+
+## Run step 4
+
+Windows (PowerShell):
+```powershell
+cd voice
+python ptt.py
+```
+
+macOS / Linux:
+```bash
+cd voice
+python3 ptt.py
+```
+
+Asks `Proceed? [y/N]` (installs `pynput`, the only new dependency).
+Then loads the STT model and waits. **Hold F9, speak, release it** —
+it transcribes, prints `You: ...`, sends that to `claude -p`, prints
+`Claude: ...`, then speaks the response through Piper. `Ctrl+C` to quit.
+
+While it's running, `voice/state.json` reflects what's actually
+happening (`idle` / `listening` / `processing` / `speaking`, plus the
+last transcript) — open the HUD (`hud/run.sh`) alongside it and the
+Audio I/O panel should track it live, refreshing every couple seconds.
+
+Options:
+- `--key f8` (or any pynput key name) if F9 collides with something on
+  your keyboard/laptop.
+- `--language ''` for auto-detect instead of forced Spanish.
+- `--skip-install` once `pynput` is already installed.
+
+Heads-up: holding a global keyboard hook is exactly the mechanism a
+keylogger would use — some antivirus may flag `ptt.py` on first run.
+That's expected for any push-to-talk tool and fine for a script you
+wrote and control; you may need to allow it once.
