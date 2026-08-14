@@ -22,9 +22,11 @@ import argparse
 import subprocess
 import sys
 import tempfile
+import time
 import wave
 
 DEFAULT_MODEL = "base"
+DEFAULT_LANGUAGE = "es"
 
 
 def pip_install(*pkgs):
@@ -34,6 +36,9 @@ def pip_install(*pkgs):
 def record(seconds, samplerate):
     import soundcard as sc
 
+    for n in (3, 2, 1):
+        print(f"  {n}...")
+        time.sleep(0.6)
     print(f"Recording for {seconds}s — speak now...")
     mic = sc.default_microphone()
     audio = mic.record(samplerate=samplerate, numframes=int(seconds * samplerate))
@@ -58,6 +63,9 @@ def main():
     ap.add_argument("--model", default=DEFAULT_MODEL,
                      help="whisper model size: tiny, base, small, medium (default: base)")
     ap.add_argument("--seconds", type=int, default=5, help="test recording length")
+    ap.add_argument("--language", default=DEFAULT_LANGUAGE,
+                     help="force transcription language (ISO code, e.g. es, en); "
+                          "pass '' to let Whisper auto-detect (unreliable on short clips)")
     ap.add_argument("--skip-install", action="store_true",
                      help="skip pip install, just run the recording test")
     args = ap.parse_args()
@@ -78,13 +86,14 @@ def main():
     print("Model loaded.")
 
     samplerate = 16000
-    input(f"\nPress Enter, then speak — recording starts immediately for {args.seconds}s.")
+    input(f"\nPress Enter — a 3-2-1 countdown gives you a beat before it records for {args.seconds}s.")
     audio = record(args.seconds, samplerate)
 
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         save_wav(tmp.name, audio, samplerate)
         print("Transcribing...")
-        segments, info = model.transcribe(tmp.name)
+        language = args.language or None  # '' -> auto-detect
+        segments, info = model.transcribe(tmp.name, language=language)
         text = " ".join(seg.text.strip() for seg in segments)
 
     print(f"\nDetected language: {info.language} (confidence {info.language_probability:.2f})")

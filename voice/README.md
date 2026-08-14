@@ -40,12 +40,16 @@ ARM64-specific artifact that can be broken or mismatched.
 - [ ] **2. `install_stt.py`** — installs faster-whisper + the `base`
       model (CPU-only, no GPU / no C compiler on this machine ruled out
       whisper.cpp), records 5s of audio, and prints the transcript.
-      Previously verified with `sounddevice`; **needs re-confirming
-      with the `soundcard` swap** — rerun and paste the transcript.
-- [ ] **3. `install_tts.py`** — installs Piper + a Spanish voice
+      Recording/playback confirmed fixed by the `soundcard` swap, but a
+      real accuracy bug turned up: language auto-detect misfired on a
+      short clip ("hola, buenas noches" → detected English → transcribed
+      "Notches"). Fixed by forcing `--language es` by default instead of
+      auto-detecting. **Needs re-confirming with that fix.**
+- [x] **3. `install_tts.py`** — installs Piper + a Spanish voice
       (`es_ES-davefx-medium`, ~60MB — Kokoro would be ~350MB and there's
       no GPU here to justify it), synthesizes a test sentence, and plays
-      it back. **Rerun with the `soundcard` swap and confirm you heard it.**
+      it back. **Confirmed 2026-08-14: heard "Hola, este es Jarvis
+      probando la voz." out loud.**
 - [ ] **4. `ptt.py` + `bridge.py`** — the push-to-talk hotkey daemon and
       the loop that wires STT → `claude -p` → TTS together.
 - [ ] **5. `start.py`** — one command that brings the whole loop up.
@@ -104,7 +108,10 @@ haven't already fetched that size).
 **2026-08-14**: verified once with `sounddevice` (`Transcript: 'Hola,
 hola buenos días'`), then `sounddevice` started failing consistently on
 later runs (see the audio backend note above). Switched to `soundcard`
-— re-run to reconfirm on this machine.
+— recording itself then worked, but language auto-detection guessed
+English on a short Spanish clip and mangled the transcript. Now forces
+Spanish by default (`--language es`); pass `--language ''` to go back to
+auto-detect, or another ISO code for a different language.
 
 ## Run step 3
 
