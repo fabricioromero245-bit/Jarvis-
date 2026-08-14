@@ -20,6 +20,7 @@ import sys
 import tempfile
 import threading
 import time
+import warnings
 from pathlib import Path
 
 import voice_lib as vl
@@ -29,6 +30,12 @@ DEFAULT_MODEL = "base"
 DEFAULT_LANGUAGE = "es"
 DEFAULT_VOICE = "es_ES-davefx-medium"
 HEARTBEAT_SECONDS = 5
+RECORD_CHUNK_FRAMES = 4096  # larger chunk = fewer, steadier reads (1024 caused discontinuity warnings)
+
+# soundcard warns on minor buffer discontinuities; harmless in practice
+# here (confirmed on 2026-08-14: recording still transcribed correctly),
+# just noisy — filtered instead of silently swallowing real errors.
+warnings.filterwarnings("ignore", message="data discontinuity in recording")
 
 
 def pip_install(*pkgs):
@@ -99,7 +106,7 @@ def main():
             frames = []
             with mic.recorder(samplerate=args.samplerate) as rec:
                 while pressed.is_set():
-                    frames.append(rec.record(numframes=1024))
+                    frames.append(rec.record(numframes=RECORD_CHUNK_FRAMES))
             if frames:
                 audio_queue.put(np.concatenate(frames, axis=0))
             else:

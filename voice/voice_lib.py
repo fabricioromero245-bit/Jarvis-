@@ -61,10 +61,17 @@ def play_wav(wav_path):
 
 
 def ask_claude(text, timeout=120):
+    # On Windows, the npm-installed `claude` command is a .cmd shim, not a
+    # native .exe. cmd.exe/PowerShell resolve that automatically; Python's
+    # subprocess (CreateProcess) does not, unless run through a shell —
+    # hence shell=True on Windows only. The input here is the user's own
+    # speech, transcribed locally on their own machine, not external/
+    # adversarial input, so the usual shell-injection concern doesn't apply.
     try:
         result = subprocess.run(
             ["claude", "-p", text],
             capture_output=True, text=True, timeout=timeout,
+            shell=(sys.platform == "win32"),
         )
     except FileNotFoundError:
         raise RuntimeError(
