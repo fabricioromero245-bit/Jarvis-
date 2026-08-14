@@ -136,7 +136,7 @@ def check_python_pkg(mod):
 def check_stt_tts():
     section("Existing STT engines")
     status(check_python_pkg("faster_whisper"), "faster-whisper (pip)")
-    status(have("whisper-cli") or have("main"), "whisper.cpp")
+    status(have("whisper-cli"), "whisper.cpp")
     hr()
 
     section("Existing TTS engines")

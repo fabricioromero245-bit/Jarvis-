@@ -22,9 +22,10 @@ unchanged on Windows, macOS, or Linux — no WSL, no bash required.
 - [x] **1. `check_env.py`** — read-only. Reports what's installed and
       what your machine can run. Installs nothing. **Run this and paste
       the output back before continuing.**
-- [ ] **2. `install_stt.py`** — installs the speech-to-text engine
-      (faster-whisper or whisper.cpp) and downloads a model, sized to
-      what step 1 found.
+- [x] **2. `install_stt.py`** — installs faster-whisper + the `base`
+      model (CPU-only, no GPU / no C compiler on this machine ruled out
+      whisper.cpp), records 5s of audio, and prints the transcript.
+      **Run this and paste the transcript back before continuing.**
 - [ ] **3. `install_tts.py`** — installs the text-to-speech engine (Piper
       or Kokoro) and downloads a voice.
 - [ ] **4. `ptt.py` + `bridge.py`** — the push-to-talk hotkey daemon and
@@ -58,3 +59,26 @@ Paste the full output back. It's used to decide:
 
 Nothing gets installed until you've seen the plan based on your actual
 machine and confirmed it.
+
+## Run step 2
+
+Windows (PowerShell):
+```powershell
+cd voice
+python install_stt.py
+```
+
+macOS / Linux:
+```bash
+cd voice
+python3 install_stt.py
+```
+
+It asks `Proceed? [y/N]` before installing anything. After installing,
+it loads the model, then waits for Enter and records 5 seconds of audio,
+transcribes it, and prints the text. Paste that output back — if the
+transcript matches what you said, step 2 is done and step 3 (TTS) is next.
+
+If it feels slow or the machine is tight on RAM, rerun with a smaller
+model: `python install_stt.py --model tiny` (only re-downloads if you
+haven't already fetched that size).
