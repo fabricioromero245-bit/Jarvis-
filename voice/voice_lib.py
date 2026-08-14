@@ -72,6 +72,7 @@ def ask_claude(text, timeout=120):
             ["claude", "-p", text],
             capture_output=True, text=True, timeout=timeout,
             shell=(sys.platform == "win32"),
+            encoding="utf-8", errors="replace",
         )
     except FileNotFoundError:
         raise RuntimeError(
