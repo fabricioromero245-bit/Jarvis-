@@ -37,14 +37,12 @@ ARM64-specific artifact that can be broken or mismatched.
 - [x] **1. `check_env.py`** — read-only. Reports what's installed and
       what your machine can run. Installs nothing. **Run this and paste
       the output back before continuing.**
-- [ ] **2. `install_stt.py`** — installs faster-whisper + the `base`
+- [x] **2. `install_stt.py`** — installs faster-whisper + the `base`
       model (CPU-only, no GPU / no C compiler on this machine ruled out
       whisper.cpp), records 5s of audio, and prints the transcript.
-      Recording/playback confirmed fixed by the `soundcard` swap, but a
-      real accuracy bug turned up: language auto-detect misfired on a
-      short clip ("hola, buenas noches" → detected English → transcribed
-      "Notches"). Fixed by forcing `--language es` by default instead of
-      auto-detecting. **Needs re-confirming with that fix.**
+      **Confirmed 2026-08-14** after forcing `--language es`:
+      `Transcript: 'hola buenas noches hola buenas noches'` (es,
+      confidence 1.00) against spoken "hola, buenas noches".
 - [x] **3. `install_tts.py`** — installs Piper + a Spanish voice
       (`es_ES-davefx-medium`, ~60MB — Kokoro would be ~350MB and there's
       no GPU here to justify it), synthesizes a test sentence, and plays
