@@ -6,10 +6,12 @@ STT (faster-whisper) -> `claude -p` -> TTS (Piper) -> speakers, and
 keeps voice/state.json updated live so the HUD's Audio I/O panel
 reflects mic/speaker state and the last transcript in real time.
 
-Default hotkey is F9 — a function key that's very unlikely to collide
-with normal typing or app shortcuts. Override with --key if it does
-(e.g. laptop Fn-row remaps). Requires the `claude` CLI on PATH; if it
-isn't, the loop still records/transcribes/speaks, it just reports the
+Default hotkey is right Ctrl — the standard push-to-talk convention
+(same as Discord etc.), chosen because F9 (the original default)
+turned out to collide with Edge's own "Reading mode" shortcut when the
+orb window (gui/) has focus. Override with --key if it collides with
+anything on your setup. Requires the `claude` CLI on PATH; if it isn't,
+the loop still records/transcribes/speaks, it just reports the
 claude-call error instead of a response — see voice/README.md.
 """
 
@@ -25,7 +27,7 @@ from pathlib import Path
 
 import voice_lib as vl
 
-DEFAULT_KEY = "f9"
+DEFAULT_KEY = "ctrl_r"
 DEFAULT_MODEL = "base"
 DEFAULT_LANGUAGE = "es"
 DEFAULT_VOICE = "es_ES-davefx-medium"
@@ -61,7 +63,7 @@ def parse_key(name, keyboard):
 
 def main():
     ap = argparse.ArgumentParser(description="Push-to-talk voice loop")
-    ap.add_argument("--key", default=DEFAULT_KEY, help="hotkey to hold (default: f9)")
+    ap.add_argument("--key", default=DEFAULT_KEY, help="hotkey to hold (default: ctrl_r, i.e. right Ctrl)")
     ap.add_argument("--model", default=DEFAULT_MODEL, help="whisper model size")
     ap.add_argument("--language", default=DEFAULT_LANGUAGE, help="STT language, '' for auto-detect")
     ap.add_argument("--voice", default=DEFAULT_VOICE,

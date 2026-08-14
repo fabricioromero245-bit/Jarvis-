@@ -179,18 +179,26 @@ python3 ptt.py
 ```
 
 Asks `Proceed? [y/N]` (installs `pynput`, the only new dependency).
-Then loads the STT model and waits. **Hold F9, speak, release it** —
-it transcribes, prints `You: ...`, sends that to `claude -p`, prints
-`Claude: ...`, then speaks the response through Piper. `Ctrl+C` to quit.
+Then loads the STT model and waits. **Hold right Ctrl, speak, release
+it** — it transcribes, prints `You: ...`, sends that to `claude -p`,
+prints `Claude: ...`, then speaks the response through Piper. `Ctrl+C`
+to quit.
 
 While it's running, `voice/state.json` reflects what's actually
 happening (`idle` / `listening` / `processing` / `speaking`, plus the
-last transcript) — open the HUD (`hud/run.sh`) alongside it and the
-Audio I/O panel should track it live, refreshing every couple seconds.
+last transcript) — open the HUD (`hud/run.sh`) or the orb (`gui/`)
+alongside it and both track it live.
+
+**2026-08-14**: the original default was F9. Switched to right Ctrl
+after F9 turned out to collide with Edge's own "Reading mode" shortcut
+— pressing it while the orb window (`gui/`) had focus popped up Edge's
+reader view instead of giving any clear sign the hotkey worked. Right
+Ctrl is the standard push-to-talk key precisely because nothing else
+binds to it.
 
 Options:
-- `--key f8` (or any pynput key name) if F9 collides with something on
-  your keyboard/laptop.
+- `--key f8` (or any pynput key name) if right Ctrl collides with
+  something on your keyboard/laptop.
 - `--language ''` for auto-detect instead of forced Spanish.
 - `--skip-install` once `pynput` is already installed.
 
@@ -224,8 +232,9 @@ python3 start.py
 That's it — this is the command to remember day to day; steps 1-4 above
 were the one-time setup. It installs anything still missing, fetches
 the voice model if it isn't cached yet, and hands off to `ptt.py` with
-F9 / Spanish / `es_ES-davefx-medium` already configured. Anything after
-`start.py` on the command line passes straight through to `ptt.py`, so
+right Ctrl / Spanish / `es_ES-davefx-medium` already configured.
+Anything after `start.py` on the command line passes straight through
+to `ptt.py`, so
 `python start.py --key f8` still works.
 
 ## Voice quality: it sounds robotic
