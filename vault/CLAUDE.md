@@ -83,3 +83,17 @@ creating, editing, or moving a single file.
 - `wiki/` filenames: `Topic Name.md` (the title, spaces allowed) — the
   filename and the `title` frontmatter field should match so wikilinks
   resolve without a lookup table.
+
+## Special raw/ subfolders read by the HUD
+
+The terminal HUD (`hud/`) reads these live — treat them as regular
+`raw/` pages (frontmatter, write-once) with one extra body convention:
+
+- `raw/schedule/YYYY-MM-DD.md` — today's time blocks, one per line:
+  `- HH:MM label`. The HUD highlights whichever block's time has most
+  recently passed. No end times; the next line's start time ends the
+  previous block implicitly.
+- `raw/vitals/<metric-slug>.md` — one file per tracked number, body
+  lines `- <timestamp> <value>`, appended over time (never rewritten).
+  The HUD shows the last value plus a sparkline of recent points. Give
+  it a `title` in frontmatter — that's the label shown on the panel.

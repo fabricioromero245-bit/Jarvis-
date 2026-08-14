@@ -15,3 +15,6 @@ new entry instead.
 - 2026-08-14 — Vault initialized: `raw/`, `wiki/`, `outputs/` created,
   schema written to `CLAUDE.md`, `index.md` and this log seeded, first
   wiki page ([[Vault Memory Layer]]) written as a working example.
+- 2026-08-14 — Terminal HUD added (`hud/`). Two new `raw/` conventions
+  documented in `CLAUDE.md`: `raw/schedule/YYYY-MM-DD.md` and
+  `raw/vitals/<metric>.md`. Seeded today's schedule as a placeholder.

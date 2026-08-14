@@ -18,7 +18,7 @@ that adds or removes a page — see [[../CLAUDE.md|CLAUDE.md]] for the rule.
 
 ## raw/
 
-_(none yet)_
+- `raw/schedule/2026-08-14.md` — today's HUD schedule blocks (placeholder — edit it).
 
 ## outputs/
 
