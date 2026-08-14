@@ -48,13 +48,19 @@ ARM64-specific artifact that can be broken or mismatched.
       no GPU here to justify it), synthesizes a test sentence, and plays
       it back. **Confirmed 2026-08-14: heard "Hola, este es Jarvis
       probando la voz." out loud.**
-- [ ] **4. `ptt.py`** — the push-to-talk daemon: hold a key, speak,
+- [x] **4. `ptt.py`** — the push-to-talk daemon: hold a key, speak,
       release, and it runs mic → STT → `claude -p` → TTS → speakers,
       keeping `voice/state.json` live for the HUD. (Merged the planned
       `bridge.py` into this one file — no benefit to splitting them at
-      this size.) **Needs the `claude` CLI on PATH — not yet confirmed
-      installed on this machine.** Not yet run/verified.
-- [ ] **5. `start.py`** — one command that brings the whole loop up.
+      this size.) **Confirmed 2026-08-14** working end to end after
+      three real fixes found by testing on this machine: the `.cmd`
+      shim needing `shell=True` on Windows, forcing UTF-8 decoding of
+      Claude's response, and pinning the reply language explicitly.
+- [x] **5. `start.py`** — one command: installs anything still missing
+      (quietly, no prompts — steps 2-4 already got explicit
+      confirmation), fetches the default voice if needed, and launches
+      `ptt.py` with the configuration confirmed working on this
+      machine. Extra args pass through, e.g. `python start.py --key f8`.
 
 **Prerequisite for step 4**: `check_env.py` (step 1) showed `claude` is
 not on this machine's PATH. `ptt.py` will record/transcribe/speak fine
@@ -200,6 +206,27 @@ Heads-up: holding a global keyboard hook is exactly the mechanism a
 keylogger would use — some antivirus may flag `ptt.py` on first run.
 That's expected for any push-to-talk tool and fine for a script you
 wrote and control; you may need to allow it once.
+
+## Run step 5 — the one command
+
+Windows (PowerShell):
+```powershell
+cd voice
+python start.py
+```
+
+macOS / Linux:
+```bash
+cd voice
+python3 start.py
+```
+
+That's it — this is the command to remember day to day; steps 1-4 above
+were the one-time setup. It installs anything still missing, fetches
+the voice model if it isn't cached yet, and hands off to `ptt.py` with
+F9 / Spanish / `es_ES-davefx-medium` already configured. Anything after
+`start.py` on the command line passes straight through to `ptt.py`, so
+`python start.py --key f8` still works.
 
 ## Voice quality: it sounds robotic
 
