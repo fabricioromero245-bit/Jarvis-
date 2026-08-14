@@ -19,6 +19,14 @@ Built in five steps, run in order, confirming before each install.
 Everything is Python (no `.sh` scripts) so the same steps work
 unchanged on Windows, macOS, or Linux — no WSL, no bash required.
 
+**Confirmed working on**: Windows on ARM64 (Snapdragon-class laptop),
+Python 3.14, faster-whisper `base` model, CPU-only. If `sounddevice`
+raises `OSError: cannot load library '...libportaudioarm64.dll' ...
+error 0x7e` on first use, install the **Visual C++ Redistributable**
+matching your CPU architecture — https://aka.ms/vs/17/release/vc_redist.arm64.exe
+for ARM64, `vc_redist.x64.exe` for a regular Intel/AMD machine — then
+reopen the terminal and retry. That single install fixed it here.
+
 - [x] **1. `check_env.py`** — read-only. Reports what's installed and
       what your machine can run. Installs nothing. **Run this and paste
       the output back before continuing.**
@@ -82,3 +90,8 @@ transcript matches what you said, step 2 is done and step 3 (TTS) is next.
 If it feels slow or the machine is tight on RAM, rerun with a smaller
 model: `python install_stt.py --model tiny` (only re-downloads if you
 haven't already fetched that size).
+
+**Verified 2026-08-14**: `Transcript: 'Hola, hola buenos días'` against
+a spoken "buenos días" — correct modulo a minor `base`-model repetition
+artifact on the leading word. Good enough to move on; a bigger model
+(`small`) would clean that up later if it bothers you in practice.
