@@ -209,7 +209,18 @@ Options:
   repeated `--add-dir` flags and actually grants read access to file
   contents in those folders, not just "doesn't error"). The vault
   (`vault/`) is always included, whether or not you pass this.
+- `--no-web-search` to turn off web search (on by default).
 - `--skip-install` once `pynput` is already installed.
+
+**Web search**: on by default. `-p` (non-interactive) mode has no way
+to show an approval prompt, so tool use is denied unless pre-approved —
+confirmed in a sandbox that a plain `claude -p "search the web..."`
+refuses with a permission error, and that adding `--allowedTools
+WebSearch` (approving only that one tool, not all tool use) makes it
+perform real searches with cited sources. This does *not* change what
+STT/TTS do — your voice audio still never leaves the machine; this is
+only about whether Claude's *answer* can reach the internet. Turn it
+off with `--no-web-search` if you'd rather keep answers offline-only.
 
 **On "give Jarvis access to my projects"**: three genuinely different
 things hide behind that phrase, and only one is directly reachable —

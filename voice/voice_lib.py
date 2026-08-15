@@ -101,7 +101,7 @@ def play_wav(wav_path):
     speaker.play(audio, samplerate=samplerate)
 
 
-def ask_claude(text, timeout=120, extra_dirs=None):
+def ask_claude(text, timeout=120, extra_dirs=None, web_search=True):
     # On Windows, the npm-installed `claude` command is a .cmd shim, not a
     # native .exe. cmd.exe/PowerShell resolve that automatically; Python's
     # subprocess (CreateProcess) does not, unless run through a shell —
@@ -115,9 +115,18 @@ def ask_claude(text, timeout=120, extra_dirs=None):
     add_dir_flags = []
     for d in (extra_dirs or []):
         add_dir_flags += ["--add-dir", str(d)]
+
+    # `-p` (non-interactive) mode has no way to show an approval prompt,
+    # so tool use is denied by default — confirmed in a sandbox that a
+    # plain `claude -p "search the web..."` refuses with a permission
+    # error. --allowedTools WebSearch pre-approves just that one tool
+    # (not a blanket bypass of all permission checks) and was confirmed
+    # to actually perform real searches with cited sources, not a no-op.
+    tool_flags = ["--allowedTools", "WebSearch"] if web_search else []
+
     try:
         result = subprocess.run(
-            ["claude", *add_dir_flags, "-p", text],
+            ["claude", *add_dir_flags, *tool_flags, "-p", text],
             capture_output=True, text=True, timeout=timeout,
             shell=(sys.platform == "win32"),
             encoding="utf-8", errors="replace",

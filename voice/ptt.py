@@ -79,6 +79,8 @@ def main():
                      help="comma-separated extra folders Claude can read (other repos/projects); "
                           "the vault (vault/) is always included so notes on Cowork/claude.ai "
                           "Projects you've written there are reachable")
+    ap.add_argument("--no-web-search", action="store_true",
+                     help="disable web search (on by default — lets Claude look things up online)")
     ap.add_argument("--skip-install", action="store_true", help="skip pip install of pynput")
     args = ap.parse_args()
 
@@ -108,6 +110,7 @@ def main():
     extra_dirs = [str(vl.VOICE_DIR.parent / "vault")]
     extra_dirs += [d.strip() for d in args.project_dirs.split(",") if d.strip()]
     print(f"Claude can also read: {', '.join(extra_dirs)}")
+    print(f"Web search: {'off' if args.no_web_search else 'on'}")
 
     pressed = threading.Event()
     audio_queue = queue.Queue()
@@ -179,7 +182,7 @@ def main():
 
         t0 = time.perf_counter()
         try:
-            response = vl.ask_claude(prompt, extra_dirs=extra_dirs)
+            response = vl.ask_claude(prompt, extra_dirs=extra_dirs, web_search=not args.no_web_search)
         except RuntimeError as e:
             print(f"claude error: {e}")
             vl.write_state(mic="idle", speaker="idle", last_transcript=text, note=str(e))
