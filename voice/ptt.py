@@ -158,10 +158,16 @@ def main():
         print(f"\nYou: {text}")
         vl.write_state(mic="idle", speaker="idle", last_transcript=text, note="thinking...")
 
-        prompt = text
+        prefix_parts = [
+            "This is a spoken voice conversation, not a chat window — "
+            "your reply will be read aloud by a TTS engine, not displayed as text. "
+            "Answer in 1-2 short, natural spoken sentences. No lists, no headers, "
+            "no code blocks, no markdown formatting of any kind."
+        ]
         if args.language:
             lang_name = LANGUAGE_NAMES.get(args.language, args.language)
-            prompt = f"(Respond only in {lang_name}.) {text}"
+            prefix_parts.append(f"Respond only in {lang_name}.")
+        prompt = " ".join(prefix_parts) + f"\n\n{text}"
 
         t0 = time.perf_counter()
         try:

@@ -213,6 +213,15 @@ ambiguous turn doesn't come back in the wrong language, but it does
 matter in practice, the fix is session continuity (`claude --continue`
 or `--resume <id>`) — not built yet, flag it if you want it.
 
+**2026-08-14, latency**: timing data (`[TIMING]` lines) showed
+multi-paragraph replies costing 14-15s just to generate, then 27-36s to
+speak — Claude was answering voice questions like a chat window
+(headers, lists, long explanations). Every prompt now gets prefixed
+with an instruction that this is a spoken conversation and to answer in
+1-2 short sentences, no markdown/lists/code blocks — cuts both the
+Claude generation time and the TTS playback time, since there's simply
+less text to produce and speak.
+
 Heads-up: holding a global keyboard hook is exactly the mechanism a
 keylogger would use — some antivirus may flag `ptt.py` on first run.
 That's expected for any push-to-talk tool and fine for a script you
