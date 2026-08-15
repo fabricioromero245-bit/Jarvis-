@@ -75,6 +75,10 @@ def main():
     ap.add_argument("--length-scale", type=float, default=1.0, help="speaking rate, higher = slower (Piper default 1.0)")
     ap.add_argument("--noise-scale", type=float, default=0.667, help="tonal variation (Piper default 0.667; pushing this higher made it worse, not better, on 2026-08-14's test)")
     ap.add_argument("--noise-w", type=float, default=0.8, help="pacing variation (Piper default 0.8)")
+    ap.add_argument("--project-dirs", default="",
+                     help="comma-separated extra folders Claude can read (other repos/projects); "
+                          "the vault (vault/) is always included so notes on Cowork/claude.ai "
+                          "Projects you've written there are reachable")
     ap.add_argument("--skip-install", action="store_true", help="skip pip install of pynput")
     args = ap.parse_args()
 
@@ -100,6 +104,10 @@ def main():
     print(f"Loading STT model ('{args.model}')...")
     model = vl.load_stt_model(args.model)
     print("Ready.")
+
+    extra_dirs = [str(vl.VOICE_DIR.parent / "vault")]
+    extra_dirs += [d.strip() for d in args.project_dirs.split(",") if d.strip()]
+    print(f"Claude can also read: {', '.join(extra_dirs)}")
 
     pressed = threading.Event()
     audio_queue = queue.Queue()
@@ -171,7 +179,7 @@ def main():
 
         t0 = time.perf_counter()
         try:
-            response = vl.ask_claude(prompt)
+            response = vl.ask_claude(prompt, extra_dirs=extra_dirs)
         except RuntimeError as e:
             print(f"claude error: {e}")
             vl.write_state(mic="idle", speaker="idle", last_transcript=text, note=str(e))

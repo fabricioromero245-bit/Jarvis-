@@ -203,7 +203,27 @@ Options:
   confirm your keyboard actually reports it the way you expect) if
   Caps Lock collides with something on your setup.
 - `--language ''` for auto-detect instead of forced Spanish.
+- `--project-dirs "C:\path\to\repo1,C:\path\to\repo2"` — extra folders
+  Claude can read from during the call, via Claude Code's `--add-dir`
+  flag (confirmed working: verified in a sandbox that it both accepts
+  repeated `--add-dir` flags and actually grants read access to file
+  contents in those folders, not just "doesn't error"). The vault
+  (`vault/`) is always included, whether or not you pass this.
 - `--skip-install` once `pynput` is already installed.
+
+**On "give Jarvis access to my projects"**: three genuinely different
+things hide behind that phrase, and only one is directly reachable —
+- **Local folders/repos** — reachable via `--project-dirs` above.
+- **claude.ai "Projects"** (the web feature for grouping conversations) —
+  no bridge exists from the local CLI to that data; it lives in the web
+  app only.
+- **Cowork sessions** — a separate product, same situation, no local-CLI
+  read path.
+
+For the last two: write what matters into a `vault/wiki/` page (project
+name, status, key facts) and it becomes reachable, since the vault is
+always in `--add-dir`. Indirect, but it actually works today — a live
+connector to either does not exist right now.
 
 **Known limitation**: every `claude -p` call is a fresh, memoryless
 conversation — nothing carries over turn to turn. `ptt.py` pins the

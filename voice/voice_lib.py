@@ -101,16 +101,23 @@ def play_wav(wav_path):
     speaker.play(audio, samplerate=samplerate)
 
 
-def ask_claude(text, timeout=120):
+def ask_claude(text, timeout=120, extra_dirs=None):
     # On Windows, the npm-installed `claude` command is a .cmd shim, not a
     # native .exe. cmd.exe/PowerShell resolve that automatically; Python's
     # subprocess (CreateProcess) does not, unless run through a shell —
     # hence shell=True on Windows only. The input here is the user's own
     # speech, transcribed locally on their own machine, not external/
     # adversarial input, so the usual shell-injection concern doesn't apply.
+    #
+    # extra_dirs grants Claude Code read/write access to project folders
+    # beyond its own cwd (e.g. the vault, other repos) via --add-dir —
+    # this is how Jarvis gets to "know about" more than one project.
+    add_dir_flags = []
+    for d in (extra_dirs or []):
+        add_dir_flags += ["--add-dir", str(d)]
     try:
         result = subprocess.run(
-            ["claude", "-p", text],
+            ["claude", *add_dir_flags, "-p", text],
             capture_output=True, text=True, timeout=timeout,
             shell=(sys.platform == "win32"),
             encoding="utf-8", errors="replace",
