@@ -39,12 +39,47 @@ def transcribe(model, audio_mono_float32, language="es"):
     return " ".join(seg.text.strip() for seg in segments).strip()
 
 
+_tts_cache = {}  # voice_model_path (str) -> loaded PiperVoice, or None if in-process loading failed
+
+
+def _get_piper_voice(voice_model_path):
+    key = str(voice_model_path)
+    if key in _tts_cache:
+        return _tts_cache[key]
+    try:
+        from piper import PiperVoice
+        voice = PiperVoice.load(key)
+    except Exception as e:
+        print(f"[TTS] in-process Piper unavailable ({e}); using a fresh subprocess per reply instead")
+        voice = None
+    _tts_cache[key] = voice
+    return voice
+
+
 def synthesize(voice_model_path, text, out_wav, length_scale=1.0, noise_scale=0.667, noise_w=0.8):
     # Reverted to Piper's own defaults 2026-08-14: pushing noise_scale/
     # noise_w higher to sound more "expressive" instead made it sound
     # worse (artifacts, not naturalness) — the model already sounds best
     # near its trained defaults. Piper's ceiling is architectural, not a
     # tuning problem — see voice/README.md.
+    #
+    # Timing showed every reply paying ~7.5s here, not just the first —
+    # each call was spawning a brand-new `python -m piper` process that
+    # reloads the ~60MB voice model from scratch every time, unlike the
+    # STT model which loads once and stays warm. Load the voice once
+    # in-process and reuse it; fall back to the proven subprocess path
+    # (same model, same params, just slower) if that fails for any reason.
+    voice = _get_piper_voice(voice_model_path)
+    if voice is not None:
+        try:
+            from piper import SynthesisConfig
+            syn_config = SynthesisConfig(length_scale=length_scale, noise_scale=noise_scale, noise_w_scale=noise_w)
+            with wave.open(str(out_wav), "wb") as wav_file:
+                voice.synthesize_wav(text, wav_file, syn_config=syn_config)
+            return
+        except Exception as e:
+            print(f"[TTS] in-process synthesis failed ({e}); falling back to subprocess for this reply")
+
     result = subprocess.run(
         [sys.executable, "-m", "piper", "--model", str(voice_model_path), "--output_file", str(out_wav),
          "--length_scale", str(length_scale), "--noise_scale", str(noise_scale), "--noise_w", str(noise_w)],
