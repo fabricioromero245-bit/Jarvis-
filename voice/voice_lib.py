@@ -101,7 +101,7 @@ def play_wav(wav_path):
     speaker.play(audio, samplerate=samplerate)
 
 
-def ask_claude(text, timeout=120, extra_dirs=None, web_search=True):
+def ask_claude(text, timeout=120, extra_dirs=None, web_search=False):
     # On Windows, the npm-installed `claude` command is a .cmd shim, not a
     # native .exe. cmd.exe/PowerShell resolve that automatically; Python's
     # subprocess (CreateProcess) does not, unless run through a shell —

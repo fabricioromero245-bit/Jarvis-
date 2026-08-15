@@ -212,15 +212,14 @@ Options:
 - `--no-web-search` to turn off web search (on by default).
 - `--skip-install` once `pynput` is already installed.
 
-**Web search**: on by default. `-p` (non-interactive) mode has no way
-to show an approval prompt, so tool use is denied unless pre-approved —
-confirmed in a sandbox that a plain `claude -p "search the web..."`
-refuses with a permission error, and that adding `--allowedTools
-WebSearch` (approving only that one tool, not all tool use) makes it
-perform real searches with cited sources. This does *not* change what
-STT/TTS do — your voice audio still never leaves the machine; this is
-only about whether Claude's *answer* can reach the internet. Turn it
-off with `--no-web-search` if you'd rather keep answers offline-only.
+**Web search**: off by default on this machine — see the 2026-08-15
+entry below for why. Turn it on with `--web-search` if your account's
+policy ever allows it; `-p` (non-interactive) mode has no way to show
+an approval prompt, so tool use needs pre-approval either way, which
+`ptt.py` does via `--allowedTools WebSearch` when the flag is passed.
+This does *not* change what STT/TTS do — your voice audio still never
+leaves the machine; this is only about whether Claude's *answer* can
+reach the internet.
 
 **On "give Jarvis access to my projects"**: three genuinely different
 things hide behind that phrase, and only one is directly reachable —
@@ -236,16 +235,25 @@ name, status, key facts) and it becomes reachable, since the vault is
 always in `--add-dir`. Indirect, but it actually works today — a live
 connector to either does not exist right now.
 
-**2026-08-15**: web search was on but silently unused — "¿Cuál es el
-próximo partido de Barcelona de Ecuador?" got back an unrelated repo
-status answer, and a weather question got "no tengo acceso a
-información en tiempo real." Reproduced in a sandbox: the brevity
-instruction alone ("Answer in 1-2 short sentences...") made Claude
-assume it should skip tools and answer immediately, rather than search
-first and then be brief. Fixed by explicitly saying tools are available
-and should be used first — verified with three different real
-questions (sports, weather, a garbled-transcription one) before
-shipping, not just once.
+**2026-08-15, web search doesn't work on this account**: real questions
+("¿Cuál es el próximo partido de los Yankees?", weather in Guayaquil)
+kept coming back with an unrelated answer about "el proyecto de
+conciliación" or a flat "no tengo acceso a información en tiempo real,"
+even with `--allowedTools WebSearch` passed and confirmed working
+against the exact same prompts in a sandbox. Ruled out, in order: the
+vault's `CLAUDE.md` (tested with no `--add-dir` at all, same failure),
+the org's "Búsqueda web" capability toggle (already on), the org's
+Claude Code managed `settings.json` (empty, no restrictions), and the
+model (`--model claude-sonnet-5` explicitly, same failure). Updating
+`claude` (2.1.232 → 2.1.233) didn't fix it either.
+
+The actual cause: `~/.claude/policy-limits.json` on this machine has
+`"enforce_web_search_mcp_isolation": {"allowed": false}` — a
+system-generated compliance restriction tied to this Team account
+(Movilcom), not a user-editable setting and not something to try to
+bypass. Web search defaults to **off** as a result — see the option
+above. If this ever needs to change, it's a conversation with whoever
+manages the org's Claude Code compliance policy, not a code fix.
 
 **Known limitation**: every `claude -p` call is a fresh, memoryless
 conversation — nothing carries over turn to turn. `ptt.py` pins the
