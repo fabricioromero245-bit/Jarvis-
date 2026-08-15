@@ -236,6 +236,17 @@ name, status, key facts) and it becomes reachable, since the vault is
 always in `--add-dir`. Indirect, but it actually works today — a live
 connector to either does not exist right now.
 
+**2026-08-15**: web search was on but silently unused — "¿Cuál es el
+próximo partido de Barcelona de Ecuador?" got back an unrelated repo
+status answer, and a weather question got "no tengo acceso a
+información en tiempo real." Reproduced in a sandbox: the brevity
+instruction alone ("Answer in 1-2 short sentences...") made Claude
+assume it should skip tools and answer immediately, rather than search
+first and then be brief. Fixed by explicitly saying tools are available
+and should be used first — verified with three different real
+questions (sports, weather, a garbled-transcription one) before
+shipping, not just once.
+
 **Known limitation**: every `claude -p` call is a fresh, memoryless
 conversation — nothing carries over turn to turn. `ptt.py` pins the
 reply language explicitly per call (based on `--language`) so a short,

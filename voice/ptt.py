@@ -170,10 +170,12 @@ def main():
         vl.write_state(mic="idle", speaker="idle", last_transcript=text, note="thinking...")
 
         prefix_parts = [
-            "This is a spoken voice conversation, not a chat window — "
-            "your reply will be read aloud by a TTS engine, not displayed as text. "
-            "Answer in 1-2 short, natural spoken sentences. No lists, no headers, "
-            "no code blocks, no markdown formatting of any kind."
+            "This is a spoken voice conversation — your reply will be read "
+            "aloud by a TTS engine. You have full access to web search and "
+            "your normal tools; use them whenever the question needs current "
+            "information, a lookup, or anything you're not already sure of. "
+            "Once you have the answer, give it in 1-2 short, natural spoken "
+            "sentences — no lists, headers, code blocks, or markdown."
         ]
         if args.language:
             lang_name = LANGUAGE_NAMES.get(args.language, args.language)
