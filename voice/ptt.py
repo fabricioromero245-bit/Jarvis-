@@ -143,10 +143,13 @@ def main():
 
     while True:
         audio = audio_queue.get()
+        t_release = time.perf_counter()  # push-to-talk key was released around here
         mono = audio[:, 0] if audio.ndim > 1 else audio
 
         vl.write_state(mic="processing", speaker="idle")
+        t0 = time.perf_counter()
         text = vl.transcribe(model, mono, language=args.language)
+        print(f"[TIMING] STT: {time.perf_counter() - t0:.2f}s")
         if not text:
             print("(heard nothing)")
             vl.write_state(mic="idle", speaker="idle", note=f"hold {args.key} to talk")
@@ -160,20 +163,28 @@ def main():
             lang_name = LANGUAGE_NAMES.get(args.language, args.language)
             prompt = f"(Respond only in {lang_name}.) {text}"
 
+        t0 = time.perf_counter()
         try:
             response = vl.ask_claude(prompt)
         except RuntimeError as e:
             print(f"claude error: {e}")
             vl.write_state(mic="idle", speaker="idle", last_transcript=text, note=str(e))
             continue
+        print(f"[TIMING] Claude: {time.perf_counter() - t0:.2f}s")
 
         print(f"Claude: {response}")
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             try:
+                t0 = time.perf_counter()
                 vl.synthesize(voice_model, response, tmp.name,
                               length_scale=args.length_scale, noise_scale=args.noise_scale, noise_w=args.noise_w)
+                print(f"[TIMING] TTS: {time.perf_counter() - t0:.2f}s")
+                print(f"[TIMING] Time to first audio: {time.perf_counter() - t_release:.2f}s")
+
                 vl.write_state(mic="idle", speaker="speaking", last_transcript=text)
+                t0 = time.perf_counter()
                 vl.play_wav(tmp.name)
+                print(f"[TIMING] Playback: {time.perf_counter() - t0:.2f}s")
             except RuntimeError as e:
                 print(f"tts error: {e}")
 
